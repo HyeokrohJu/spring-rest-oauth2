@@ -8,7 +8,7 @@
      - formatter폴더에 있는 java_formatter_20190930.xml파일 Formatter에 import
      - formatter폴더에 있는 java_codetemplateds_20190930.xml파일 Code Templates에 import
      - formatter폴더에 있는 sts_saveaction_20190930.png 이미지를 보고 Save Actions 세팅
- 3. hrpj Project Clone(https://kindhn@bitbucket.org/hrpj/hrpj.git)
+ 3. hrpj Project Clone(https://github.com/HyeokrohJu/spring-rest-oauth2.git)
  4. Maven Project import 후 Maven Update
  5. Boot Dashboard에 com.hrpj.oauth, com.hrpj.restful Profile값을 local로 설정
  6. **인증이 oauth기반으로 oauth를 먼저 올리고 restful을 올려야 서버가 올라감**
