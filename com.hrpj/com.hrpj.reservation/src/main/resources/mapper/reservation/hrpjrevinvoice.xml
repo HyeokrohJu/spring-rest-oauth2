@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 예약 Invoice 관련 쿼리 -->
+<mapper namespace="mapper.reservation.hrpjrevinvoice">
+
+	<!-- 예약 Invoice 관련 테이블 필드 -->
+	<sql id="select-revinvoice-frag">
+		revinvoiceid, revid, productnm, price, guest, startdt, enddt,
+		quantity, discount, totprice, currency, disporder,
+		creid, credate, updid, upddate, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 예약 Invoice 등록 -->
+    <insert id="insertRevInvoice" parameterType="map">
+    	<selectKey resultType="string" keyProperty="returnKey" order="BEFORE">
+    		select 
+				concat('NO.', lpad(ifnull(cast(substr(substr(max(revinvoiceid), 4), 1, 4) as unsigned) + 1, 1), 4, 0), '_', date_format(now(), '%Y')) as revinvoiceid
+			from hrpj_revinvoice
+			where substr(revinvoiceid, 9) = date_format(now(), '%Y')
+    	</selectKey>
+		insert into ${hrschema}.hrpj_revinvoice (<include refid="select-revinvoice-frag" />)
+		select 
+			#{returnKey} as revinvoiceid,
+		    #{revid} as revid,
+		    #{productnm} as productnm,
+		    #{price} as price,
+		    #{guest} as guest,
+		    #{startdt} as startdt,
+		    #{enddt} as enddt,
+		    #{quantity} as quantity,
+		    #{discount} as discount,
+		    #{totprice} as totprice,
+		    #{currency} as currency,
+		    #{disporder} as disporder,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    null as updid,
+		    null as upddate,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		from ${hrschema}.hrpj_revdiver
+    	limit 1
+    </insert>
+    
+    <!-- 예약 Invoice 조회 -->
+    <select id="selectRevInvoice" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-revinvoice-frag" />
+        from ${hrschema}.hrpj_revinvoice
+        <where> 
+	        <if test="revinvoiceid != null">
+	            and revinvoiceid = #{revinvoiceid}
+	        </if> 
+	        <if test="revid != null">
+	            and revid = #{revid}
+	        </if> 
+	        <if test="productnm != null">
+	            and productnm = #{productnm}
+	        </if> 
+	        <if test="price != null">
+	            and price = #{price}
+	        </if> 
+	        <if test="guest != null">
+	            and guest = #{guest}
+	        </if> 
+	        <if test="startdt != null">
+	            and date_format(startdt, '%Y%m%d') = #{startdt}
+	        </if>
+	        <if test="enddt != null">
+	            and date_format(enddt, '%Y%m%d') = #{enddt}
+	        </if>
+	        <if test="quantity != null">
+	            and quantity = #{quantity}
+	        </if>
+	        <if test="discount != null">
+	            and discount = #{discount}
+	        </if>
+	        <if test="totprice != null">
+	            and totprice = #{totprice}
+	        </if>
+	        <if test="currency != null">
+	            and currency = #{currency}
+	        </if>
+	        <if test="creid != null">
+	            and creid = #{creid}
+	        </if> 
+	        <if test="credate != null">
+	            and credate = #{credate}
+	        </if> 
+	        <if test="updid != null">
+	            and updid = #{updid}
+	        </if> 
+	        <if test="upddate != null">
+	            and upddate = #{upddate}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 예약 Invoice 수정 -->
+    <update id="updateRevInvoice" parameterType="map">
+		update ${hrschema}.hrpj_revinvoice
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="productnm != null and productnm !=''">productnm = #{productnm},</if> 
+	        <if test="price != null and price !=''">price = #{price},</if> 
+	        <if test="guest != null and guest !=''">guest = #{guest},</if>  
+	        <if test="startdt != null and startdt !=''">startdt = #{startdt},</if>  
+	        <if test="enddt != null and enddt !=''">enddt = #{enddt},</if>  
+	        <if test="quantity != null and quantity !=''">quantity = #{quantity},</if>  
+	        <if test="discount != null and discount !=''">discount = #{discount},</if>  
+	        <if test="totprice != null and totprice !=''">totprice = #{totprice},</if>  
+	        <if test="currency != null and currency !=''">currency = #{currency},</if>  
+	        <if test="disporder != null and disporder !=''">disporder = #{disporder},</if>
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if>  
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if>  
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if>  
+	        updid = #{hruserid},
+	        upddate = now(),
+        </trim>
+        where revinvoiceid = #{revinvoiceid}
+        and revid = #{revid}
+    </update>
+    
+    <!-- 예약 Invoice 물리 삭제 -->
+    <delete id="deleteRevInvoice" parameterType="map">
+      	delete from ${hrschema}.hrpj_revinvoice
+        where revid = #{revid}
+        <if test="revinvoiceid != null and revinvoiceid != ''">
+        and revinvoiceid = #{revinvoiceid}
+        </if>
+    </delete>
+
+</mapper>

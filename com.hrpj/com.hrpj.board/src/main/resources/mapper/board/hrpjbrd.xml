@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 게시판 관련 쿼리 -->
+<mapper namespace="mapper.board.hrpjbrd">
+
+	<!-- 게시판 테이블 필드 -->
+	<sql id="select-brd-frag">
+		brdid, upbrdid, sgrp, brdnm, brddesc, useyn, fldyn, brdtype, printyn, replyyn, 
+		cmntyn, notiyn, replynotiyn, cmntnotiyn, clickdispyn, rcmdyn, attachyn, attachsize, 
+		pwduseyn, secretyn, odelyn, newbltyn, annyn, bltreuseyn, reserveyn, templateid, disporder, 
+		creid, credate, creip, updid, upddate, updip, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 게시판 계층형 조회 -->
+    <select id="selectBrdHierarchy" parameterType="map" resultType="caseMap">
+    	select 
+    		lvl,
+			<include refid="select-brd-frag" />
+		from (           
+			select 
+				level as lvl, 
+				<include refid="select-brd-frag" />
+				from (
+					select ${hrschema}.FN_RECURSIVE_BRD() id, @level as level
+						from (
+							select  @start_with := <if test="upbrdid == null or upbrdid == ''">''</if><if test="upbrdid != '' and upbrdid != null">#{upbrdid}</if>,
+								@id := @start_with,
+								@level := 0
+								) vars, (
+							select <include refid="select-brd-frag" /> from ${hrschema}.hrpj_brd
+								<if test="sgrp != '' and sgrp != null">where sgrp = #{sgrp}</if> 
+							) tb
+						where @id is not null
+							<if test="sgrp != '' and sgrp != null">and sgrp = #{sgrp}</if>
+							<if test="useyn != '' and useyn != null">and useyn = #{useyn}</if>
+				) sg2                    
+			join ${hrschema}.hrpj_brd sg
+			on sg.brdid = sg2.id
+			<if test="sgrp != '' and sgrp != null">where sgrp = #{sgrp}</if> 
+		) tabal
+    </select>
+    
+    <!-- 게시판 조회 -->
+    <select id="selectBrd" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-brd-frag" />
+        from ${hrschema}.hrpj_brd
+        <where> 
+	        <if test="brdid != null">
+	            and brdid = #{brdid}
+	        </if> 
+	        <if test="sgrp != null">
+	            and sgrp = #{sgrp}
+	        </if> 
+	        <if test="brdnm != null">
+	            and brdnm = #{brdnm}
+	        </if> 
+	        <if test="useyn != null">
+	            and useyn = #{useyn}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 게시판 등록 -->
+    <insert id="insertBrd" parameterType="map">
+		insert into ${hrschema}.hrpj_brd (<include refid="select-brd-frag" />)
+		select 
+			concat('BRD', lpad(ifnull(cast(substr(max(brdid), 4) as unsigned) + 1, 0), 7, 0)) as compid,
+		    #{upbrdid} as upbrdid,
+		    #{sgrp} as sgrp,
+		    #{brdnm} as brdnm,
+		    #{brddesc} as brddesc,
+		    #{useyn} as useyn,
+		    #{fldyn} as fldyn,
+		    #{brdtype} as brdtype,
+		    #{printyn} as printyn,
+		    #{replyyn} as replyyn,
+		    #{cmntyn} as cmntyn,
+		    #{notiyn} as notiyn,
+		    #{replynotiyn} as replynotiyn,
+		    #{cmntnotiyn} as cmntnotiyn,
+		    #{clickdispyn} as clickdispyn,
+		    #{rcmdyn} as rcmdyn,
+		    #{attachyn} as attachyn,
+		    #{attachsize} as attachsize,
+		    #{pwduseyn} as pwduseyn,
+		    #{secretyn} as secretyn,
+		    #{odelyn} as odelyn,
+		    #{newbltyn} as newbltyn,
+		    #{annyn} as annyn,
+		    #{bltreuseyn} as bltreuseyn,
+		    #{reserveyn} as reserveyn,
+		    #{templateid} as templateid,
+		    (select count(1) from ${hrschema}.hrpj_brd where upbrdid = #{upbrdid}) as disporder,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    #{hrcip} as creip,
+		    null as updid,
+		    null as upddate,
+		    null as updip,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		from ${hrschema}.hrpj_brd
+    	<selectKey resultType="string" keyProperty="returnKey" order="AFTER">
+    		select max(brdid) as brdid from ${hrschema}.hrpj_brd
+    	</selectKey>
+    </insert>
+    
+    <!-- 게시판 수정 -->
+    <update id="updateBrd" parameterType="map">
+		update ${hrschema}.hrpj_brd
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="upbrdid != null and upbrdid !=''">upbrdid = #{upbrdid},</if> 
+	        <if test="sgrp != null and sgrp !=''">sgrp = #{sgrp},</if> 
+	        <if test="brdnm != null and brdnm !=''">brdnm = #{brdnm},</if> 
+	        <if test="brddesc != null and brddesc !=''">brddesc = #{brddesc},</if> 
+	        <if test="useyn != null and useyn !=''">useyn = #{useyn},</if> 
+	        <if test="fldyn != null and fldyn !=''">fldyn = #{fldyn},</if> 
+	        <if test="brdtype != null and brdtype !=''">brdtype = #{brdtype},</if> 
+	        <if test="printyn != null and printyn !=''">printyn = #{printyn},</if> 
+	        <if test="replyyn != null and replyyn !=''">replyyn = #{replyyn},</if> 
+	        <if test="cmntyn != null and cmntyn !=''">cmntyn = #{cmntyn},</if> 
+	        <if test="notiyn != null and notiyn !=''">notiyn = #{notiyn},</if> 
+	        <if test="replynotiyn != null and replynotiyn !=''">replynotiyn = #{replynotiyn},</if> 
+	        <if test="cmntnotiyn != null and cmntnotiyn !=''">cmntnotiyn = #{cmntnotiyn},</if> 
+	        <if test="clickdispyn != null and clickdispyn !=''">clickdispyn = #{clickdispyn},</if> 
+	        <if test="rcmdyn != null and rcmdyn !=''">rcmdyn = #{rcmdyn},</if> 
+	        <if test="attachyn != null and attachyn !=''">attachyn = #{attachyn},</if> 
+	        <if test="attachsize != null and attachsize !=''">attachsize = #{attachsize},</if> 
+	        <if test="pwduseyn != null and pwduseyn !=''">pwduseyn = #{pwduseyn},</if> 
+	        <if test="secretyn != null and secretyn !=''">secretyn = #{secretyn},</if> 
+	        <if test="odelyn != null and odelyn !=''">odelyn = #{odelyn},</if> 
+	        <if test="newbltyn != null and newbltyn !=''">newbltyn = #{newbltyn},</if> 
+	        <if test="annyn != null and annyn !=''">annyn = #{annyn},</if> 
+	        <if test="bltreuseyn != null and bltreuseyn !=''">bltreuseyn = #{bltreuseyn},</if> 
+	        <if test="reserveyn != null and reserveyn !=''">reserveyn = #{reserveyn},</if> 
+	        <if test="templateid != null and templateid !=''">templateid = #{templateid},</if> 
+	        <if test="disporder != null and disporder !=''">disporder = #{disporder},</if> 
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if> 
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if> 
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if> 
+	        updid = #{hruserid},
+	        upddate = now(),
+	        updip = #{hrcip},
+        </trim>
+        where brdid = #{brdid}
+    </update>
+    
+    <!-- 게시판 물리 삭제 -->
+    <delete id="deleteBrd" parameterType="map">
+      	delete from ${hrschema}.hrpj_brd
+      	where brdid = #{brdid}
+    </delete>
+
+</mapper>

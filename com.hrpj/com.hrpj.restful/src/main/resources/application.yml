@@ -1,0 +1,182 @@
+
+#기본 설정
+server:
+  port: 8081
+  context-path: /api
+
+spring:
+  http:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: test
+    password: test
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  velocity:
+    resourceLoaderPath: classpath:/template/
+    suffix: .vm
+    cache: false
+    check-template-location: true
+    content-type: text/html
+    charset: UTF-8
+    properties:
+      input:
+        encoding: UTF-8
+      output:
+        encoding: UTF-8
+
+mail:
+  from: test@gmail.com
+
+---
+#local 설정
+server:
+  port: 8081
+  attach:
+    src: d:\\com.hrpj\\com.hrpj.front\\public\\attach\\
+    domain: http://localhost:3000/attach/
+
+security:
+  oauth2:
+    client:
+      client-id: rest_server_id
+      client-secret: rest_server_secret
+    resource:
+      jwt:
+        key-uri: http://localhost:8082/oauth/token_key
+    
+spring:
+  profiles: local
+  
+  datasource:
+    url: jdbc:mariadb://192.168.20.66:3306/hrpj?autoReconnect=true
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: test
+    password: test
+    dbcp2:
+      max-idle: 10
+      max-wait-millis: -1
+      validation-query: SELECT 1
+      test-on-borrow: true
+    tomcat:
+      max-active: 20
+      max-idle: 10
+      max-wait: -1
+      validation-query: SELECT 1
+      test-on-borrow: true
+      initial-size: 2
+      test-while-idle: true
+      time-between-eviction-runs-millis: 3600000
+      min-evictable-idle-time-millis: 7200000
+
+logging:
+  config: classpath:logback-spring-local.xml
+
+---
+#local Home 설정
+server:
+  port: 8081
+  attach:
+    src: d:\\hrag\\attach\\
+    domain: http://localhost:4200/attach/
+  
+security:
+  oauth2:
+    client:
+      client-id: rest_server_id
+      client-secret: rest_server_secret
+    resource:
+      jwt:
+        key-uri: http://localhost:8082/oauth/token_key
+    
+spring:
+  profiles: localhome
+    
+  datasource:
+    url: jdbc:mariadb://localhost:3306/hrpj?autoReconnect=true
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: test
+    password: test
+    dbcp2:
+      max-idle: 10
+      max-wait-millis: -1
+      validation-query: SELECT 1
+      test-on-borrow: true
+    tomcat:
+      max-active: 20
+      max-idle: 10
+      max-wait: -1
+      validation-query: SELECT 1
+      test-on-borrow: true
+      initial-size: 2
+      test-while-idle: true
+      time-between-eviction-runs-millis: 3600000
+      min-evictable-idle-time-millis: 7200000
+
+logging:
+  config: classpath:logback-spring-local.xml
+    
+---
+#dev 설정
+server:
+  port: 8081
+  attach:
+    src: /app/attach/
+  
+spring:
+  profiles: dev
+logging:
+  config: classpath:logback-spring.xml
+  
+---
+#product 설정
+server:
+  port: 8081
+  attach:
+    src: /www/attach/
+    domain: http://local.test.com/attach/
+  
+security:
+  oauth2:
+    client:
+      client-id: rest_server_id
+      client-secret: rest_server_secret
+    resource:
+      jwt:
+        key-uri: http://local.test.com:8082/oauth/token_key
+  
+spring:
+  profiles: prod
+  
+  datasource:
+    url: jdbc:mariadb://121.126.223.222:3306/hrpj?autoReconnect=true
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: test
+    password: test
+    dbcp2:
+      max-idle: 10
+      max-wait-millis: -1
+      validation-query: SELECT 1
+      test-on-borrow: true
+    tomcat:
+      max-active: 20
+      max-idle: 10
+      max-wait: -1
+      validation-query: SELECT 1
+      test-on-borrow: true
+      initial-size: 2
+      test-while-idle: true
+      time-between-eviction-runs-millis: 3600000
+      min-evictable-idle-time-millis: 7200000
+      
+logging:
+  config: classpath:logback-spring.xml

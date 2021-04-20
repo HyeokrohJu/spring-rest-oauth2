@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 회원 관련 쿼리 -->
+<mapper namespace="mapper.organization.hrpjmember">
+
+	<!-- 회원 테이블 필드 -->
+	<sql id="select-member-frag">
+		userid, usernm, deptid, deptnm, compid, compnm, loginid, state, passwd, passwdfailcnt, 
+		email, zipcd, addr1, addr2, useyn, hphone, mphone, sex, disporder, credate, updid, upddate,
+		custom1, custom2, custom3
+    </sql>
+    
+    <!-- 회원 조회 -->
+    <select id="selectMember" parameterType="map" resultType="caseMap">
+    	select
+	        <if test="selectcnt == null or selectcnt ==''">
+	        	(select concat(roleid) from ${hrschema}.hrpj_memberrole where userid = a.userid) as roleid,
+        		<include refid="select-member-frag" />
+	        </if> 
+	        <if test="selectcnt != null and selectcnt !=''">
+	            count(*) as cnt
+	        </if> 
+        from ${hrschema}.hrpj_member a
+        <where> 
+	        <if test="userid != null">
+	            and userid = #{userid}
+	        </if> 
+	        <if test="usernm != null">
+	            and usernm = #{usernm}
+	        </if> 
+	        <if test="deptid != null">
+	            and deptid = #{deptid}
+	        </if> 
+	        <if test="deptnm != null">
+	            and deptnm = #{deptnm}
+	        </if> 
+	        <if test="compid != null">
+	            and compid = #{compid}
+	        </if> 
+	        <if test="compnm != null">
+	            and compnm = #{compnm}
+	        </if> 
+	        <if test="loginid != null">
+	            and loginid = #{loginid}
+	        </if> 
+	        <if test="state != null">
+	            and state = #{state}
+	        </if> 
+	        <if test="email != null">
+	            and email = #{email}
+	        </if> 
+	        <if test="useyn != null">
+	            and useyn = #{useyn}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 회원 등록 -->
+    <insert id="insertMember" parameterType="map">
+    	<selectKey resultType="string" keyProperty="returnKey" order="BEFORE">
+    		select lpad(ifnull(cast(max(userid) as unsigned) + 1, 0), 10, 0) from ${hrschema}.hrpj_member
+    	</selectKey>
+		insert into ${hrschema}.hrpj_member (<include refid="select-member-frag" />)
+		select 
+			#{returnKey} as userid,
+		    #{usernm} as usernm,
+		    #{deptid} as deptid,
+		    #{deptnm} as deptnm,
+		    #{compid} as compid,
+		    #{compnm} as compnm,
+		    #{loginid} as loginid,
+		    #{state} as state,
+		    #{passwd} as passwd,
+		    '0' as passwdfailcnt,
+		    #{email} as email,
+		    #{zipcd} as zipcd,
+		    #{addr1} as addr1,
+		    #{addr2} as addr2,
+		    #{useyn} as useyn,
+		    #{hphone} as hphone,
+		    #{mphone} as mphone,
+		    #{sex} as sex,
+		    count(1) as disporder,
+		    now() as credate,
+		    null as updid,
+		    null as moddate,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		from ${hrschema}.hrpj_member
+		where compid = #{compid}
+		and deptid = #{deptid}
+		limit 1
+    </insert>
+    
+    <!-- 회원 Role등록 -->
+    <insert id="insertMemberrole" parameterType="map">
+		insert into ${hrschema}.hrpj_memberrole (userid, roleid, compid, deptid, creid, credate)
+		values (#{userid}, #{roleid}, #{compid}, #{deptid}, #{hruserid}, now())
+    </insert>
+    
+    <!-- 회원 수정 -->
+    <update id="updateMember" parameterType="map">
+		update ${hrschema}.hrpj_member
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="usernm != null and usernm !=''">usernm = #{usernm},</if> 
+	        <if test="deptid != null and deptid !=''">deptid = #{deptid},</if> 
+	        <if test="deptnm != null and deptnm !=''">deptnm = #{deptnm},</if> 
+	        <if test="compid != null and compid !=''">compid = #{compid},</if> 
+	        <if test="compnm != null and compnm !=''">compnm = #{compnm},</if> 
+	        <if test="loginid != null and loginid !=''">loginid = #{loginid},</if> 
+	        <if test="state != null and state !=''">state = #{state},</if> 
+	        <if test="passwd != null and passwd !=''">passwd = #{passwd},</if> 
+	        <if test="passwdfailcnt != null and passwdfailcnt !=''">passwdfailcnt = #{passwdfailcnt},</if> 
+	        <if test="email != null and email !=''">email = #{email},</if> 
+	        <if test="zipcd != null and zipcd !=''">zipcd = #{zipcd},</if> 
+	        <if test="addr1 != null and addr1 !=''">addr1 = #{addr1},</if> 
+	        <if test="addr2 != null and addr2 !=''">addr2 = #{addr2},</if> 
+	        <if test="useyn != null and useyn !=''">useyn = #{useyn},</if> 
+	        <if test="hphone != null and hphone !=''">hphone = #{hphone},</if> 
+	        <if test="mphone != null and mphone !=''">mphone = #{mphone},</if> 
+	        <if test="sex != null and sex !=''">sex = #{sex},</if> 
+	        <if test="disporder != null and disporder !=''">disporder = #{disporder},</if> 
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if> 
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if> 
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if> 
+	        <if test="passwdfailcnt == null or passwdfailcnt ==''"> 
+	        updid = #{hruserid},
+	        upddate = now(),
+	        </if>
+        </trim>
+        <where> 
+	        <if test="compUpdate != null and compUpdate != ''">
+	            and compid = #{compid}
+	        </if> 
+	        <if test="deptUpdate != null and deptUpdate != ''">
+	            and compid = #{compid}
+	            and deptid = #{deptid}
+	        </if> 
+	        <if test="(compUpdate == null or compUpdate == '') and (deptUpdate == null or deptUpdate == '')">
+        		and userid = #{userid}
+	        </if>
+        </where>
+    </update>
+    
+    <!-- 회원 Role 수정 -->
+    <update id="updateMemberrole" parameterType="map">
+		update ${hrschema}.hrpj_memberrole
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="roleid != null and roleid !=''">roleid = #{roleid},</if> 
+	        <if test="compid != null and compid !=''">compid = #{compid},</if> 
+	        <if test="deptid != null and deptid !=''">deptid = #{deptid},</if> 
+	        updid = #{hruserid},
+	        upddate = now(),
+        </trim>
+        where userid = #{userid}
+    </update>
+    
+    <!-- 회원 물리 삭제 -->
+    <delete id="deleteMember" parameterType="map">
+      	delete from ${hrschema}.hrpj_member
+      	<where> 
+	        <if test="compid != null and compid != ''">
+	            and compid = #{compid}
+	        </if> 
+	        <if test="deptid != null and deptid != ''">
+	            and deptid = #{deptid}
+	        </if>
+	        <if test="(compid == null or compid == '') and (deptid == null or deptid == '')">
+	            and userid = #{userid}
+	        </if> 
+        </where>
+    </delete>
+    
+    <!-- 회원 Role 물리 삭제 -->
+    <delete id="deleteMemberrole" parameterType="map">
+      	delete from ${hrschema}.hrpj_memberrole
+      	<where> 
+	        <if test="compid != null and compid != ''">
+	            and compid = #{compid}
+	        </if> 
+	        <if test="deptid != null and deptid != ''">
+	            and deptid = #{deptid}
+	        </if>
+	        <if test="(compid == null or compid == '') and (deptid == null or deptid == '')">
+	            and userid = #{userid}
+	        </if> 
+        </where>
+    </delete>
+    
+    <!-- 회원 Role 조회 -->
+    <select id="selectUserRole" parameterType="map" resultType="caseMap">
+    	select
+        	id, code, label, ordinal, effectiveat, expiresat, createdat
+        from ${hrschema}.hrpj_role
+        <where> 
+	        <if test="id != null">
+	            and id = #{id}
+	        </if> 
+	        <if test="code != null">
+	            and code = #{code}
+	        </if> 
+	        <if test="label != null">
+	            and label = #{label}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 회원 아이디 찾기 -->
+    <select id="getFindId" parameterType="map" resultType="caseMap">
+    	select
+	        loginid
+        from ${hrschema}.hrpj_member
+        where ${type} = #{val}
+    </select>
+    
+    <!-- Admin 권한 여부 -->
+    <select id="isAdmin" parameterType="map" resultType="caseMap">
+    	select count(1) as admincnt
+    	from ${hrschema}.hrpj_memberrole a, ${hrschema}.hrpj_role b 
+    	where a.roleid = b.id 
+    	and b.code = 'role_admin' 
+    	and a.userid = #{userid}
+    </select>
+
+</mapper>

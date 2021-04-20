@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 메뉴 관련 쿼리 -->
+<mapper namespace="mapper.common.hrpjmenu">
+
+	<!-- 사이트코드 테이블 필드 -->
+	<sql id="select-sitesgrp-frag">
+         sgrp, sgrpnm, als, stype, domain, delyn, disporder, creid, credate, updid, upddate
+    </sql>
+    
+    <!-- 메뉴 테이블 필드 -->
+	<sql id="select-menu-frag">
+         menucd, upmenucd, sgrp, menunm, mtype, wdpyn, disporder, useyn, expyn, icontype, icon, exact, creid, credate, updid, upddate
+    </sql>
+    
+    <!-- 사이트그룹 조회 -->
+    <select id="selectSgrp" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-sitesgrp-frag" />
+        from ${hrschema}.hrpj_sgrp
+        <where> 
+	        <if test="delyn != null">
+	            and delyn = #{delyn}
+	        </if> 
+	        <if test="sgrp != null">
+	            and sgrp = #{sgrp}
+	        </if> 
+	        <if test="sgrpnm != null">
+	            and sgrpnm = #{sgrpnm}
+	        </if> 
+	        <if test="als != null">
+	            and als = #{als}
+	        </if> 
+	        <if test="stype != null">
+	            and stype = #{stype}
+	        </if> 
+	        <if test="domain != null">
+	            and domain = #{domain}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 사이트그룹 등록 -->
+    <insert id="insertSgrp" parameterType="map">
+		insert into ${hrschema}.hrpj_sgrp (<include refid="select-sitesgrp-frag" />)
+		select 
+			ifnull(concat(#{preSgrp}, cast(substr(max(sgrp), 3) as unsigned) + 1), concat(#{preSgrp}, '0')) as sgrp,
+		    #{sgrpnm} as sgrpnm,
+		    #{als} as als,
+		    #{stype} as stype,
+		    #{domain} as domain,
+		    #{delyn} as delyn,
+		    (select count(1) from ${hrschema}.hrpj_sgrp) as disporder,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    null as updid,
+		    null as upddate
+		from ${hrschema}.hrpj_sgrp
+		where stype = #{stype}
+    	<selectKey resultType="string" keyProperty="returnKey" order="AFTER">
+    		select max(sgrp) as sgrp from ${hrschema}.hrpj_sgrp
+    		where stype = #{stype}
+    	</selectKey>
+    </insert>
+    
+    <!-- 사이트그룹 수정 -->
+    <update id="updateSgrp" parameterType="map">
+		update ${hrschema}.hrpj_sgrp
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="sgrpnm != null and sgrpnm !=''">sgrpnm = #{sgrpnm},</if> 
+	        <if test="als != null and als !=''">als = #{als},</if> 
+	        <if test="stype != null and stype !=''">stype = #{stype},</if> 
+	        <if test="domain != null and domain !=''">domain = #{domain},</if> 
+	        <if test="delyn != null and delyn !=''">delyn = #{delyn},</if> 
+	        updid = #{hruserid},
+	        upddate = now(),
+        </trim>
+        where sgrp = #{sgrp}
+    </update>
+    
+    <!-- 사이트그룹 물리 삭제 -->
+    <delete id="deleteSgrp" parameterType="map">
+      	delete from ${hrschema}.hrpj_sgrp where sgrp = #{sgrp}
+    </delete>
+    
+    <!-- 메뉴 계층형 조회 -->
+    <select id="selectMenuHierarchy" parameterType="map" resultType="caseMap">
+    	select 
+	   		a.lvl,
+			a.menucd, a.upmenucd, a.sgrp, a.menunm, a.mtype, a.wdpyn, a.disporder, a.useyn, a.expyn, a.icontype, a.icon, a.exact, a.creid, a.credate, a.updid, a.upddate,
+			b.upath, b.cpath, b.rid, b.fldyn,
+			(select rolecd from ${hrschema}.hrpj_auth where menucd = a.menucd) as rolecd
+		from (           
+			select 
+				level as lvl, 
+				<include refid="select-menu-frag" />
+				from (
+					select ${hrschema}.FN_RECURSIVE_MENU(#{sgrp}) id, @level as level
+						from (
+							select  @start_with := <if test="upmenucd == null or upmenucd == ''">''</if><if test="upmenucd != '' and upmenucd != null">#{upmenucd}</if>,
+								@id := @start_with,
+								@level := 0
+								) vars, (
+							select <include refid="select-menu-frag" /> from ${hrschema}.hrpj_menu
+								<if test="sgrp != '' and sgrp != null">where sgrp = #{sgrp}</if> 
+							) tb
+						where @id is not null
+							<if test="sgrp != '' and sgrp != null">and sgrp = #{sgrp}</if> 
+				) sg2                    
+			join ${hrschema}.hrpj_menu sg
+			on sg.menucd = sg2.id
+			<where>
+				<if test="sgrp != '' and sgrp != null">and sgrp = #{sgrp}</if>
+				<if test="useyn != '' and useyn != null">and useyn = #{useyn}</if>
+				<if test="expyn != '' and expyn != null">and expyn = #{expyn}</if> 
+			</where> 
+		) a left outer join ${hrschema}.hrpj_components b
+		on a.menucd = b.menucd
+    </select>
+    
+    <!-- 메뉴 등록 -->
+    <insert id="insertMenu" parameterType="map">
+		insert into ${hrschema}.hrpj_menu (<include refid="select-menu-frag" />)
+		select 
+			<if test="menuroot == '' or menuroot == null">
+			concat(substr(max(menucd), 1, 2), lpad(cast(substr(max(menucd), 3) as unsigned) + 1, 2, 0)) as menucd,
+			</if>
+			<if test="menuroot != '' and menuroot != null">
+			concat(#{sgrp}, '0') as menucd,
+			</if>
+		    #{upmenucd} as upmenucd,
+		    #{sgrp} as sgrp,
+		    #{menunm} as menunm,
+		    #{mtype} as mtype,
+		    #{wdpyn} as wdpyn,
+		    (select count(1) from ${hrschema}.hrpj_menu where upmenucd = #{upmenucd}) as disporder,
+		    #{useyn} as useyn,
+		    #{expyn} as expyn,
+		    #{icontype} as icontype,
+		    #{icon} as icon,
+		    #{exact} as exact,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    null as updid,
+		    null as upddate
+		<if test="menuroot == '' or menuroot == null">
+		from ${hrschema}.hrpj_menu
+		where sgrp = #{sgrp}
+		</if>
+    	<selectKey resultType="string" keyProperty="returnKey" order="AFTER">
+    		select max(menucd) as menucd from ${hrschema}.hrpj_menu
+    		where sgrp = #{sgrp}
+    	</selectKey>
+    </insert>
+    
+    <!-- 메뉴 수정 -->
+    <update id="updateMenu" parameterType="map">
+		update ${hrschema}.hrpj_menu
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="upmenucd != null and upmenucd !=''">upmenucd = #{upmenucd},</if> 
+	        <if test="menunm != null and menunm !=''">menunm = #{menunm},</if> 
+	        <if test="mtype != null and mtype !=''">mtype = #{mtype},</if> 
+	        <if test="wdpyn != null and wdpyn !=''">wdpyn = #{wdpyn},</if> 
+	        <if test="disporder != null and disporder !=''">disporder = #{disporder},</if> 
+	        <if test="useyn != null and useyn !=''">useyn = #{useyn},</if> 
+	        <if test="expyn != null and expyn !=''">expyn = #{expyn},</if> 
+	        <if test="icontype != null and icontype !=''">icontype = #{icontype},</if> 
+	        <if test="icon != null and icon !=''">icon = #{icon},</if> 
+	        <if test="exact != null and exact !=''">icon = #{exact},</if> 
+	        updid = #{hruserid},
+	        upddate = now(),
+        </trim>
+        <where> 
+	        <if test="menuroot != '' and menuroot != null">
+	            and sgrp = #{sgrp}
+	            and upmenucd = ''
+	        </if> 
+	       <if test="menuroot == '' or menuroot == null">
+	            and sgrp = #{sgrp}
+        		and menucd = #{menucd}
+	        </if> 
+        </where>
+    </update>
+    
+    <!-- 메뉴 조회 -->
+    <select id="selectMenu" parameterType="map" resultType="caseMap">
+    	select
+        	a.menucd, a.upmenucd, a.sgrp, a.menunm, a.mtype, a.wdpyn, a.disporder, a.useyn, 
+        	a.expyn, a.icontype, a.icon, a.exact, a.creid, a.credate, a.updid, a.upddate,
+        	b.upath, b.cpath, b.rid, b.fldyn
+        from ${hrschema}.hrpj_menu a left outer join ${hrschema}.hrpj_components b
+		on a.menucd = b.menucd
+        <where> 
+	        <if test="menucd != null">
+	            and a.menucd = #{menucd}
+	        </if> 
+	        <if test="upmenucd != null">
+	            and a.upmenucd = #{upmenucd}
+	        </if> 
+	        <if test="sgrp != null">
+	            and a.sgrp = #{sgrp}
+	        </if> 
+	        <if test="menunm != null">
+	            and a.menunm = #{menunm}
+	        </if> 
+	        <if test="mtype != null">
+	            and a.mtype = #{mtype}
+	        </if> 
+	        <if test="wdpyn != null">
+	            and a.wdpyn = #{wdpyn}
+	        </if> 
+	        <if test="disporder != null">
+	            and a.disporder = #{disporder}
+	        </if> 
+	        <if test="useyn != null">
+	            and a.useyn = #{useyn}
+	        </if> 
+	        <if test="expyn != null">
+	            and a.expyn = #{expyn}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and a.${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 메뉴 물리 삭제 -->
+    <delete id="deleteMenu" parameterType="map">
+      	delete from ${hrschema}.hrpj_menu
+      	<where> 
+	        <if test="sgrp == null or sgrp ==''">
+	            and menucd = #{menucd}
+	        </if> 
+	        <if test="sgrp != null and sgrp !=''">
+	            and sgrp = #{sgrp}
+	        </if> 
+        </where>
+    </delete>
+
+</mapper>

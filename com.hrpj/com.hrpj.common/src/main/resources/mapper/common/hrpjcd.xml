@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 코드 관련 쿼리 -->
+<mapper namespace="mapper.common.hrpjcd">
+
+	<!-- 코드 테이블 필드 -->
+	<sql id="select-cd-frag">
+         cd, upcd, cdnm, useyn, disporder, creid, credate, updid, upddate 
+    </sql>
+    
+    <!-- 코드 계층형 조회 -->
+    <select id="selectCdHierarchy" parameterType="map" resultType="caseMap">
+    	select 
+    		lvl,
+			<include refid="select-cd-frag" />
+		from (           
+			select 
+				level as lvl, 
+				<include refid="select-cd-frag" />
+				from (
+					select ${hrschema}.FN_RECURSIVE_CD() id, @level as level
+						from (
+							select  @start_with := <if test="upcd == null or upcd == ''">''</if><if test="upcd != '' and upcd != null">#{upcd}</if>,
+								@id := @start_with,
+								@level := 0
+								) vars, ${hrschema}.hrpj_cd
+						where @id is not null
+							<if test="useyn != '' and useyn != null">and useyn = #{useyn}</if> 
+				) sg2                    
+			join ${hrschema}.hrpj_cd sg
+			on sg.cd = sg2.id 
+		) tabal
+    </select>
+    
+    <!-- 코드 등록 -->
+    <insert id="insertCd" parameterType="map">
+		insert into ${hrschema}.hrpj_cd (<include refid="select-cd-frag" />)
+		select 
+			ifnull(concat('CD', cast(substr(max(cd), 2) as unsigned) + 1), concat('CD', '0')) as cd,
+		    #{upcd} as upcd,
+		    #{cdnm} as cdnm,
+		    #{useyn} as useyn,
+		    (select count(1) from ${hrschema}.hrpj_cd where upcd = #{upcd}) as disporder,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    null as updid,
+		    null as upddate
+		from ${hrschema}.hrpj_cd
+    	<selectKey resultType="string" keyProperty="returnKey" order="AFTER">
+    		select max(cd) as sgrp from ${hrschema}.hrpj_cd
+    	</selectKey>
+    </insert>
+    
+    <!-- 코드 조회 -->
+    <select id="selectCd" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-cd-frag" />
+        from ${hrschema}.hrpj_cd
+        <where> 
+	        <if test="cd != null">
+	            and cd = #{cd}
+	        </if> 
+	        <if test="upcd != null">
+	            and upcd = #{upcd}
+	        </if> 
+	        <if test="cdnm != null">
+	            and cdnm = #{cdnm}
+	        </if> 
+	        <if test="useyn != null">
+	            and useyn = #{useyn}
+	        </if> 
+	        <if test="disporder != null">
+	            and disporder = #{disporder}
+	        </if> 
+	        <if test="creid != null">
+	            and creid = #{creid}
+	        </if> 
+	        <if test="credate != null">
+	            and credate = #{credate}
+	        </if> 
+	        <if test="updid != null">
+	            and updid = #{updid}
+	        </if> 
+	        <if test="upddate != null">
+	            and upddate = #{upddate}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 코드 수정 -->
+    <update id="updateCd" parameterType="map">
+		update ${hrschema}.hrpj_cd
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="upcd != null and upcd !=''">upcd = #{upcd},</if> 
+	        <if test="cdnm != null and cdnm !=''">cdnm = #{cdnm},</if> 
+	        <if test="useyn != null and useyn !=''">useyn = #{useyn},</if> 
+	        <if test="disporder != null and disporder !=''">disporder = #{disporder},</if> 
+	        updid = #{hruserid},
+	        upddate = now(),
+        </trim>
+        where cd = #{cd}
+    </update>
+    
+    <!-- 코드 물리 삭제 -->
+    <delete id="deleteCd" parameterType="map">
+      	delete from ${hrschema}.hrpj_cd
+	    where cd = #{cd}
+    </delete>
+
+</mapper>

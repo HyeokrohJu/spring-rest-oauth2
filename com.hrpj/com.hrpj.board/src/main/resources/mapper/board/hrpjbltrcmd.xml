@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 게시물 추천 관련 쿼리 -->
+<mapper namespace="mapper.board.hrpjbltrcmd">
+
+	<!-- 게시물 추천 테이블 필드 -->
+	<sql id="select-bltrcmd-frag">
+		brdid, bltid, rcmdtype, creid, crenm, credate, creip
+    </sql>
+    
+    <!-- 게시물 추천 조회 -->
+    <select id="selectBltrcmd" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-bltrcmd-frag" />
+        from ${hrschema}.hrpj_bltrcmd
+        <where> 
+	        <if test="brdid != null">
+	            and brdid = #{brdid}
+	        </if> 
+	        <if test="bltid != null">
+	            and bltid = #{bltid}
+	        </if> 
+	        <if test="rcmdtype != null">
+	            and rcmdtype = #{rcmdtype}
+	        </if> 
+	        <if test="creid != null">
+	            and creid = #{creid}
+	        </if> 
+	        <if test="crenm != null">
+	            and crenm = #{crenm}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 게시물 추천 등록 -->
+    <insert id="insertBltrcmd" parameterType="map">
+    	<selectKey resultType="string" keyProperty="returnKey" order="BEFORE">
+    		select #{bltid} as bltid
+    	</selectKey>
+		insert into ${hrschema}.hrpj_bltrcmd (<include refid="select-bltrcmd-frag" />)
+		values (
+			#{brdid},
+			#{returnKey},
+			#{rcmdtype},
+		    #{hruserid},
+		    #{hrusernm},
+		    now(),
+		    #{hrcip}
+		)
+    </insert>
+    
+    <!-- 게시물 추천 물리 삭제 -->
+    <delete id="deleteBltrcmd" parameterType="map">
+      	delete from ${hrschema}.hrpj_bltrcmd
+      	<if test="(bltalldel == null or bltalldel == '') and (brdalldel == null or brdalldel == '')">
+      	where bltid = #{bltid}
+        and creid = #{hruserid}
+        </if>
+        <if test="bltalldel != null and bltalldel != ''">
+      	where bltid = #{bltid}
+        </if>
+        <if test="brdalldel != null and brdalldel != ''">
+      	where brdid = #{brdid}
+        </if>
+    </delete>
+
+</mapper>

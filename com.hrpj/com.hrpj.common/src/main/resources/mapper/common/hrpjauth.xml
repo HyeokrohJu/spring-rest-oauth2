@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 권한 관련 쿼리 -->
+<mapper namespace="mapper.common.hrpjauth">
+
+	<!-- 권한 테이블 필드 -->
+	<sql id="select-auth-frag">
+         authid, menucd, rolecd, creid, credate, updid, upddate, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 권한 등록 -->
+    <insert id="insertAuth" parameterType="map">
+    	<selectKey resultType="string" keyProperty="returnKey" order="BEFORE">
+    		select max(authid) + 1 as authid from ${hrschema}.hrpj_auth
+    	</selectKey>
+		insert into ${hrschema}.hrpj_auth (<include refid="select-auth-frag" />)
+		values (
+			#{returnKey},
+			#{menucd},
+			#{rolecd},
+			#{hruserid},
+			now(),
+			null,
+			null,
+			#{custom1},
+			#{custom2},
+			#{custom3}
+		)
+    </insert>
+    
+    <!-- 권한 물리 삭제 -->
+    <delete id="deleteAuth" parameterType="map">
+      	delete from ${hrschema}.hrpj_auth 
+      	where authid = #{authid}
+      	and menucd = #{menucd}
+    </delete>
+
+</mapper>

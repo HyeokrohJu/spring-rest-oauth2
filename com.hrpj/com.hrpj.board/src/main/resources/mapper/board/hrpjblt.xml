@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 게시물 관련 쿼리 -->
+<mapper namespace="mapper.board.hrpjblt">
+
+	<!-- 게시물 테이블 필드 -->
+	<sql id="select-blt-frag">
+		bltid, brdid, upbltid, orgbltid, disporder, lvl, state, title, cont, replycnt, cmntcnt, clickcnt, rcmdcnt, oppcnt, imptyn, 
+		secretyn, pwdyn, attachyn, cmntyn, replyyn, headlineyn, headline, postdtyn, bltstartdt, bltenddt, annyn, shareyn, 
+		creid, crenm, credate, creip, updid, updnm, upddate, updip, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 게시물 계층형 조회 -->
+    <select id="selectBltHierarchy" parameterType="map" resultType="caseMap">
+    	select 
+    		lvl,
+			<include refid="select-blt-frag" />
+		from (           
+			select 
+				<include refid="select-blt-frag" />
+				from (
+					select ${hrschema}.FN_RECURSIVE_BLT() id, @level as level
+						from (
+							select  @start_with := <if test="upbltid == null or upbltid == ''">''</if><if test="upbltid != '' and upbltid != null">#{upbltid}</if>,
+								@id := @start_with,
+								@level := 0
+								) vars, (
+							select <include refid="select-blt-frag" /> from ${hrschema}.hrpj_blt
+								<if test="brdid != '' and brdid != null">where brdid = #{brdid}</if> 
+							) tb
+						where @id is not null
+							<if test="brdid != '' and brdid != null">and brdid = #{brdid}</if>
+				) sg2                    
+			join ${hrschema}.hrpj_blt sg
+			on sg.bltid = sg2.id
+			<if test="brdid != '' and brdid != null">where brdid = #{brdid}</if> 
+		) tabal
+    </select>
+    
+    <!-- 게시물 조회 -->
+    <select id="selectBlt" parameterType="map" resultType="caseMap">
+    	select
+	        <if test="selectcnt == null or selectcnt ==''">
+        		<include refid="select-blt-frag" />
+        		, (select fileurl from ${hrschema}.hrpj_attach where tblnm = 'hrpj_blt' and tblkey = a.bltid and filethumb = 'Y' limit 1) as filethumb
+        		, (select count(1) from ${hrschema}.hrpj_bltcmnt where brdid = a.brdid and bltid = a.bltid) as cntcmnt
+	        </if> 
+	        <if test="selectcnt != null and selectcnt !=''">
+	            count(*) as cnt
+	        </if> 
+        from ${hrschema}.hrpj_blt a
+        <where> 
+	        <if test="bltid != null">
+	            and bltid = #{bltid}
+	        </if> 
+	        <if test="brdid != null">
+	            and brdid = #{brdid}
+	        </if> 
+	        <if test="upbltid != null">
+	            and upbltid = #{upbltid}
+	        </if> 
+	        <if test="upbltid != null">
+	            and upbltid = #{upbltid}
+	        </if> 
+	        <if test="state != null">
+	            and state = #{state}
+	        </if> 
+	        <if test="creid != null">
+	            and creid = #{creid}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol == null or ordercol ==''">
+        order by annyn desc, orgbltid desc, lvl asc, disporder asc
+        </if>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 게시물 등록 -->
+    <insert id="insertBlt" parameterType="map">
+    	<selectKey resultType="string" keyProperty="returnKey" order="BEFORE">
+    		select ifnull(max(bltid), 0) + 1 as bltid from ${hrschema}.hrpj_blt
+    	</selectKey>
+		insert into ${hrschema}.hrpj_blt (<include refid="select-blt-frag" />)
+		select
+		    #{returnKey} as bltid,
+		    #{brdid} as brdid,
+		     <if test="orgbltid == null or orgbltid ==''">
+		    '0' as upbltid,
+	        #{returnKey} as orgbltid,
+		    '0' as disporder,
+		    '0' as lvl,
+	        </if>
+	        <if test="orgbltid != null and orgbltid !=''">
+	        #{upbltid} as upbltid,
+	        #{orgbltid} as orgbltid,
+		    (#{disporder} + 1) as disporder,
+	        #{lvl} + 1 as lvl,
+	        </if>
+		    #{state} as state,
+		    #{title} as title,
+		    #{cont} as cont,
+		    #{replycnt} as replycnt,
+		    #{cmntcnt} as cmntcnt,
+		    #{clickcnt} as clickcnt,
+		    #{rcmdcnt} as rcmdcnt,
+		    #{oppcnt} as oppcnt,
+		    #{imptyn} as imptyn,
+		    #{secretyn} as secretyn,
+		    #{pwdyn} as pwdyn,
+		    #{attachyn} as attachyn,
+		    #{cmntyn} as cmntyn,
+		    #{replyyn} as replyyn,
+		    #{headlineyn} as headlineyn,
+		    #{headline} as headline,
+		    #{postdtyn} as postdtyn,
+		    #{bltstartdt} as bltstartdt,
+		    #{bltenddt} as bltenddt,
+		    #{annyn} as annyn,
+		    #{shareyn} as shareyn,
+		    #{hruserid} as creid,
+		    #{hrusernm} as crenm,
+		    now() as credate,
+		    #{hrcip} as creip,
+		    null as updid,
+		    null as updnm,
+		    null as upddate,
+		    null as updip,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		from ${hrschema}.hrpj_blt
+	    limit 1
+    </insert>
+    
+    <!-- 게시물 순번 수정 -->
+    <update id="updateBltSort" parameterType="map">
+    	update ${hrschema}.hrpj_blt
+    	<trim prefix="SET" suffixOverrides=",">
+	        <if test="add == 'Y'">disporder = disporder + 1,</if>
+	        <if test="del == 'Y'">disporder = disporder - 1,</if>
+        </trim>
+    	where orgbltid = #{orgbltid}
+    	and disporder > #{disporder}
+    </update>
+    
+    <!-- 게시물 수정 -->
+    <update id="updateBlt" parameterType="map">
+		update ${hrschema}.hrpj_blt
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="brdid != null and brdid !=''">brdid = #{brdid},</if>
+	        <if test="upbltid != null and upbltid !=''">upbltid = #{upbltid},</if>
+	        <if test="state != null and state !=''">state = #{state},</if> 
+	        <if test="title != null and title !=''">title = #{title},</if> 
+	        <if test="cont != null and cont !=''">cont = #{cont},</if> 
+	        <if test="replycnt != null and replycnt !=''">replycnt = #{replycnt},</if> 
+	        <if test="cmntcnt != null and cmntcnt !=''">cmntcnt = #{cmntcnt},</if> 
+	        <if test="clickcnt != null and clickcnt !=''">clickcnt = #{clickcnt},</if> 
+	        <if test="rcmdcnt != null and rcmdcnt !=''">rcmdcnt = #{rcmdcnt},</if> 
+	        <if test="oppcnt != null and oppcnt !=''">oppcnt = #{oppcnt},</if> 
+	        <if test="imptyn != null and imptyn !=''">imptyn = #{imptyn},</if> 
+	        <if test="secretyn != null and secretyn !=''">secretyn = #{secretyn},</if> 
+	        <if test="pwdyn != null and pwdyn !=''">pwdyn = #{pwdyn},</if> 
+	        <if test="attachyn != null and attachyn !=''">attachyn = #{attachyn},</if> 
+	        <if test="cmntyn != null and cmntyn !=''">cmntyn = #{cmntyn},</if> 
+	        <if test="replyyn != null and replyyn !=''">replyyn = #{replyyn},</if> 
+	        <if test="headlineyn != null and headlineyn !=''">headlineyn = #{headlineyn},</if> 
+	        <if test="headline != null and headline !=''">headline = #{headline},</if> 
+	        <if test="postdtyn != null and postdtyn !=''">postdtyn = #{postdtyn},</if> 
+	        <if test="bltstartdt != null and bltstartdt !=''">bltstartdt = #{bltstartdt},</if> 
+	        <if test="bltenddt != null and bltenddt !=''">bltenddt = #{bltenddt},</if> 
+	        <if test="annyn != null and annyn !=''">annyn = #{annyn},</if> 
+	        <if test="shareyn != null and shareyn !=''">shareyn = #{shareyn},</if> 
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if> 
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if> 
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if> 
+	        updid = #{hruserid},
+	        updnm = #{hrusernm},
+	        upddate = now(),
+	        updip = #{hrcip},
+        </trim>
+        where bltid = #{bltid}
+    </update>
+    
+    <!-- 게시물 물리 삭제 -->
+    <delete id="deleteBlt" parameterType="map">
+      	delete from ${hrschema}.hrpj_blt
+      	<if test="brdalldel == null or brdalldel == ''">
+      	where bltid = #{bltid}
+        </if>
+        <if test="brdalldel != null and brdalldel != ''">
+      	where brdid = #{brdid}
+        </if>
+    </delete>
+    
+    <!-- 게시물 수정 -->
+    <update id="updateCntBlt" parameterType="map">
+		update ${hrschema}.hrpj_blt set clickcnt = clickcnt + 1
+        where bltid = #{bltid}
+    </update>
+
+</mapper>

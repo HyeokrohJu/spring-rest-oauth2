@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- Kakao 관련 쿼리 -->
+<mapper namespace="mapper.common.hrpjkakao">
+
+	<!-- Kakao token 테이블 필드 -->
+	<sql id="select-kakaotoken-frag">
+        accesstoken, toekntype, refreshtoken, tokenexp, rtokenexp, scope
+    </sql>
+    
+    <!-- Kakao token 등록 -->
+    <insert id="insertKakaotoken" parameterType="map">
+		insert into ${hrschema}.hrpj_kakaotoken (<include refid="select-kakaotoken-frag" />)
+		values(
+			#{accesstoken},
+			#{toekntype},
+			#{refreshtoken},
+			#{tokenexp},
+			#{rtokenexp},
+			#{scope}
+		)
+    </insert>
+    
+    <!-- Kakao token 조회 -->
+    <select id="selectKakaotoken" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-kakaotoken-frag" />
+        from ${hrschema}.hrpj_kakaotoken
+        limit 1 
+    </select>
+    
+    <!-- Kakao token 물리 삭제 -->
+    <delete id="deleteKakaotoken" parameterType="map">
+      	delete from ${hrschema}.hrpj_kakaotoken
+    </delete>
+
+</mapper>

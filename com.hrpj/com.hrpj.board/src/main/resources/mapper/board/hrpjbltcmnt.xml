@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 댓글 관련 쿼리 -->
+<mapper namespace="mapper.board.hrpjbltcmnt">
+
+	<!-- 댓글 테이블 필드 -->
+	<sql id="select-bltcmnt-frag">
+		brdid, bltid, cmntid, upcmntid, orgcmntid, disporder, lvl, cmnt, state, rcmdcnt,
+		creid, crenm, credate, creip, updid, updnm, upddate, updip, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 댓글 조회 -->
+    <select id="selectBltcmnt" parameterType="map" resultType="caseMap">
+    	select
+	        <if test="selectcnt == null or selectcnt ==''">
+        		brdid, bltid, cmntid, upcmntid, orgcmntid, disporder, lvl, state, rcmdcnt,
+				credate, creip, updid, updnm, upddate, updip, custom1, custom2, custom3,
+        		(select count(*) from ${hrschema}.hrpj_bltcmnt where upcmntid = a.cmntid and lvl > 0 and state = 'Y') as replycnt,
+				case state
+					when 'D' then '삭제된 댓글 입니다.'
+					else cmnt
+				end as cmnt,
+			    case state
+					when 'D' then '...!?'
+					else crenm
+				end as crenm,
+			    case state
+					when 'D' then '...!?'
+					else creid
+				end as creid
+	        </if> 
+	        <if test="selectcnt != null and selectcnt !=''">
+	            count(*) as cnt
+	        </if> 
+        from ${hrschema}.hrpj_bltcmnt a
+        <where> 
+	        <if test="brdid != null">
+	            and brdid = #{brdid}
+	        </if> 
+	        <if test="bltid != null">
+	            and bltid = #{bltid}
+	        </if> 
+	        <if test="cmntid != null">
+	            and cmntid = #{cmntid}
+	        </if> 
+	        <if test="upcmntid != null">
+	            and upcmntid = #{upcmntid}
+	        </if> 
+	        <if test="state != null">
+	            and state = #{state}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol == null or ordercol ==''">
+        order by orgcmntid desc, lvl asc, disporder asc
+        </if>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 댓글 등록 -->
+    <insert id="insertBltcmnt" parameterType="map">
+    	<selectKey resultType="string" keyProperty="returnKey" order="BEFORE">
+    		select ifnull(max(cmntid), 0) + 1 as cmntid from ${hrschema}.hrpj_bltcmnt
+    	</selectKey>
+		insert into ${hrschema}.hrpj_bltcmnt (<include refid="select-bltcmnt-frag" />)
+		values (
+			#{brdid},
+		    #{bltid},
+		    #{returnKey},
+		     <if test="orgcmntid == null or orgcmntid ==''">
+		    '0',
+	        #{returnKey},
+		    '0',
+		    '0',
+	        </if>
+	        <if test="orgcmntid != null and orgcmntid !=''">
+	        #{upcmntid},
+	        #{orgcmntid},
+		    (#{disporder} + 1),
+	        #{lvl} + 1,
+	        </if>
+		    #{cmnt},
+		    #{state},
+		    #{rcmdcnt},
+		    #{hruserid},
+		    #{hrusernm},
+		    now(),
+		    #{hrcip},
+		    null,
+		    null,
+		    null,
+		    null,
+		    #{custom1},
+		    #{custom2},
+		    #{custom3}
+		)
+    </insert>
+    
+    <!-- 댓글 순번 수정 -->
+    <update id="updateBltcmntSort" parameterType="map">
+    	update ${hrschema}.hrpj_bltcmnt set
+    		disporder = disporder + 1
+    	where orgcmntid = #{orgcmntid}
+    	and disporder > #{disporder}
+    </update>
+    
+    <!-- 댓글 수정 -->
+    <update id="updateBltcmnt" parameterType="map">
+		update ${hrschema}.hrpj_bltcmnt
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="brdid != null and brdid !=''">brdid = #{brdid},</if>
+	        <if test="bltid != null and bltid !=''">bltid = #{bltid},</if>
+	        <if test="upcmntid != null and upcmntid !=''">upcmntid = #{upcmntid},</if>
+	        <if test="cmnt != null and cmnt !=''">cmnt = #{cmnt},</if> 
+	        <if test="state != null and state !=''">state = #{state},</if> 
+	        <if test="rcmdcnt != null and rcmdcnt !=''">rcmdcnt = #{rcmdcnt},</if> 
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if> 
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if> 
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if> 
+	        updid = #{hruserid},
+	        updnm = #{hrusernm},
+	        upddate = now(),
+	        updip = #{hrcip},
+        </trim>
+        where cmntid = #{cmntid}
+    </update>
+    
+    <!-- 댓글 물리 삭제 -->
+    <delete id="deleteBltcmnt" parameterType="map">
+      	delete from ${hrschema}.hrpj_bltcmnt
+      	<if test="(bltalldel == null or bltalldel == '') and (brdalldel == null or brdalldel == '')">
+      	where cmntid = #{cmntid}
+        </if>
+        <if test="bltalldel != null and bltalldel != ''">
+      	where bltid = #{bltid}
+        </if>
+        <if test="brdalldel != null and brdalldel != ''">
+      	where brdid = #{brdid}
+        </if>
+    </delete>
+    
+    <update id="deleteBltCmntProc" statementType="CALLABLE" parameterType="map">
+    	{ call ${hrschema}.BLTCMNT_DELT(#{cmntid}, #{state}, #{return}) }
+    </update>
+
+</mapper>

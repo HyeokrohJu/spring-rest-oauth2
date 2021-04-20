@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 첨부파일 관련 쿼리 -->
+<mapper namespace="mapper.common.hrpjattach">
+
+	<!-- 첨부파일 테이블 필드 -->
+	<sql id="select-attach-frag">
+		attachid, tblnm, tblkey, filenm, filesnm, filepath, filetype, filesize, fileurl, filethumb, tempkey, editoryn, disporder,
+		creid, credate, creip, updid, upddate, updip, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 첨부파일 조회 -->
+    <select id="selectAttach" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-attach-frag" />
+        from ${hrschema}.hrpj_attach
+        <where> 
+	        <if test="attachid != null">
+	            and attachid = #{attachid}
+	        </if> 
+	        <if test="tblnm != null">
+	            and tblnm = #{tblnm}
+	        </if> 
+	        <if test="tblkey != null">
+	            and tblkey = #{tblkey}
+	        </if> 
+	        <if test="filenm != null">
+	            and filenm = #{filenm}
+	        </if> 
+	        <if test="tempkey != null">
+	            and tempkey = #{tempkey}
+	        </if> 
+	        <if test="editoryn != null">
+	            and editoryn = #{editoryn}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 첨부파일 등록 -->
+    <insert id="insertAttach" parameterType="map">
+    	<selectKey resultType="string" keyProperty="returnKey" order="BEFORE">
+    		select ifnull(max(attachid), 0) + 1 as attachid from ${hrschema}.hrpj_attach
+    	</selectKey>
+		insert into ${hrschema}.hrpj_attach (<include refid="select-attach-frag" />)
+		select
+		    #{returnKey} as attachid,
+		    #{tblnm} as tblnm,
+		    #{tblkey} as tblkey,
+		    #{filenm} as filenm,
+		    #{filesnm} as filesnm,
+		    #{filepath} as filepath,
+		    #{filetype} as filetype,
+		    #{filesize} as filesize,
+		    #{fileurl} as fileurl,
+		    #{filethumb} as filethumb,
+		    #{tempkey} as tempkey,
+		    #{editoryn} as editoryn,
+		    (ifnull(max(disporder), 0) + 1) as disporder,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    #{hrcip} as creip,
+		    null as updid,
+		    null as upddate,
+		    null as updip,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		from ${hrschema}.hrpj_attach
+	    where tblnm = #{tblnm} 
+        <if test="tblkey != null and tblkey != ''">
+            and tblkey = #{tblkey}
+        </if> 
+        <if test="tblkey == null and tblkey == ''">
+            and tempkey = #{tempkey}
+        </if> 
+    </insert>
+    
+    <!-- 첨부파일 수정 -->
+    <update id="updateAttach" parameterType="map">
+		update ${hrschema}.hrpj_attach
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="tblnm != null and tblnm !=''">tblnm = #{tblnm},</if>
+	        <if test="tblkey != null and tblkey !=''">tblkey = #{tblkey},</if>
+	        <if test="filenm != null and filenm !=''">filenm = #{filenm},</if> 
+	        <if test="filesnm != null and filesnm !=''">filesnm = #{filesnm},</if> 
+	        <if test="filepath != null and filepath !=''">filepath = #{filepath},</if> 
+	        <if test="filetype != null and filetype !=''">filetype = #{filetype},</if> 
+	        <if test="filesize != null and filesize !=''">filesize = #{filesize},</if> 
+	        <if test="fileurl != null and fileurl !=''">fileurl = #{fileurl},</if> 
+	        <if test="filethumb != null and filethumb !=''">filethumb = #{filethumb},</if> 
+	        <if test="tempkey != null and tempkey !=''">tempkey = #{tempkey},</if> 
+	        <if test="editoryn != null and editoryn !=''">editoryn = #{editoryn},</if> 
+	        <if test="disporder != null and disporder !=''">disporder = #{disporder},</if> 
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if> 
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if> 
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if> 
+	        updid = #{hruserid},
+	        upddate = now(),
+	        updip = #{hrcip},
+        </trim>
+        <if test="tblkeyupd != null and tblkeyupd != ''">
+            where tblkey = #{tblkeyupd}
+        </if> 
+        <if test="tblkeyupd == null or tblkeyupd == ''">
+	        where attachid = #{attachid}
+	        <if test="tempkey != null and tempkey != ''">
+	            and tempkey = #{tempkey}
+	        </if>
+        </if> 
+    </update>
+    
+    <!-- 첨부파일 물리 삭제 -->
+    <delete id="deleteAttach" parameterType="map">
+      	delete from ${hrschema}.hrpj_attach
+      	where attachid = #{attachid}
+    </delete>
+
+</mapper>

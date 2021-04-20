@@ -1,0 +1,50 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.hrpj</groupId>
+		<artifactId>com.hrpj</artifactId>
+		<version>0.0.1</version>
+	</parent>
+	
+	<packaging>jar</packaging>
+	
+	<groupId>com.hrpj.restful</groupId>
+	<artifactId>com.hrpj.restful</artifactId>
+	
+	<properties>
+	    <tomcat.version>8.5.27</tomcat.version>
+	</properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.hrpj.board</groupId>
+            <artifactId>com.hrpj.board</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hrpj.organization</groupId>
+            <artifactId>com.hrpj.organization</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hrpj.common</groupId>
+            <artifactId>com.hrpj.common</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hrpj.reservation</groupId>
+            <artifactId>com.hrpj.reservation</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

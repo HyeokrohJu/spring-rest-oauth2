@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 게시판 템플릿 관련 쿼리 -->
+<mapper namespace="mapper.board.hrpjbrdtemplate">
+
+	<!-- 게시판 템플릿 테이블 필드 -->
+	<sql id="select-brdtemplate-frag">
+		templateid, sgrp, templatenm, cont, useyn,
+		creid, credate, creip, updid, updnm, upddate, updip, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 게시판 템플릿 조회 -->
+    <select id="selectBrdtemplate" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-brdtemplate-frag" />
+        from ${hrschema}.hrpj_brdtemplate
+        <where> 
+	        <if test="templateid != null">
+	            and templateid = #{templateid}
+	        </if> 
+	        <if test="sgrp != null">
+	            and sgrp = #{sgrp}
+	        </if> 
+	        <if test="templatenm != null">
+	            and templatenm = #{templatenm}
+	        </if> 
+	        <if test="useyn != null">
+	            and useyn = #{useyn}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 게시판 템플릿 등록 -->
+    <insert id="insertBrdtemplate" parameterType="map">
+    	<selectKey resultType="string" keyProperty="returnKey" order="BEFORE">
+    		select ifnull(max(templateid), 0) + 1 as templateid from ${hrschema}.hrpj_brdtemplate
+    	</selectKey>
+		insert into ${hrschema}.hrpj_brdtemplate (<include refid="select-brdtemplate-frag" />)
+		values (
+		    #{returnKey} as templateid,
+		    #{sgrp} as sgrp,
+		    #{templatenm} as templatenm,
+		    #{cont} as cont,
+		    #{useyn} as useyn,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    #{hrcip} as creip,
+		    null as updid,
+		    null as upddate,
+		    null as updip,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		)
+    </insert>
+    
+    <!-- 게시판 템플릿 수정 -->
+    <update id="updateBrdtemplate" parameterType="map">
+		update ${hrschema}.hrpj_brdtemplate
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="sgrp != null and sgrp !=''">sgrp = #{sgrp},</if>
+	        <if test="templatenm != null and templatenm !=''">templatenm = #{templatenm},</if> 
+	        <if test="cont != null and cont !=''">cont = #{cont},</if> 
+	        <if test="useyn != null and useyn !=''">useyn = #{useyn},</if> 
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if> 
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if> 
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if> 
+	        updid = #{hruserid},
+	        upddate = now(),
+	        updip = #{hrcip},
+        </trim>
+        where templateid = #{templateid}
+    </update>
+    
+    <!-- 게시판 템플릿 물리 삭제 -->
+    <delete id="deleteBrdtemplate" parameterType="map">
+      	delete from ${hrschema}.hrpj_brdtemplate
+      	where templateid = #{templateid}
+    </delete>
+
+</mapper>

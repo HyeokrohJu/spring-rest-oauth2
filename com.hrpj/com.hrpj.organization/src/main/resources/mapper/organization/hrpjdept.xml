@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 부서 관련 쿼리 -->
+<mapper namespace="mapper.organization.hrpjdept">
+
+	<!-- 부서정보 테이블 필드 -->
+	<sql id="select-dept-frag">
+		deptid, deptnm, updeptid, compid, compnm, state, useyn, disporder,
+		creid, credate, updid, upddate, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 부서리스트 계층형 조회 -->
+    <select id="selectDeptHierarchy" parameterType="map" resultType="caseMap">
+    	select 
+    		lvl,
+			<include refid="select-dept-frag" />
+		from (           
+			select 
+				level as lvl, 
+				<include refid="select-dept-frag" />
+				from (
+					select ${hrschema}.FN_RECURSIVE_DEPT() id, @level as level
+						from (
+							select  @start_with := <if test="updeptid == null or updeptid == ''">''</if><if test="updeptid != '' and updeptid != null">#{updeptid}</if>,
+								@id := @start_with,
+								@level := 0
+								) vars, (
+							select <include refid="select-dept-frag" /> from ${hrschema}.hrpj_dept
+								<if test="compid != '' and compid != null">where compid = #{compid}</if> 
+							) tb
+						where @id is not null
+							<if test="compid != '' and compid != null">and compid = #{compid}</if> 
+							<if test="useyn != '' and useyn != null">and useyn = #{useyn}</if> 
+							<if test="state != '' and state != null">and state = #{state}</if> 
+				) sg2                    
+			join ${hrschema}.hrpj_dept sg
+			on sg.deptid = sg2.id
+			<if test="compid != '' and compid != null">where compid = #{compid}</if> 
+		) tabal
+    </select>
+    
+    <!-- 부서정보 조회 -->
+    <select id="selectDept" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-dept-frag" />
+        from ${hrschema}.hrpj_dept
+        <where> 
+	        <if test="deptid != null">
+	            and deptid = #{deptid}
+	        </if> 
+	        <if test="deptnm != null">
+	            and deptnm = #{deptnm}
+	        </if> 
+	        <if test="updeptid != null">
+	            and updeptid = #{updeptid}
+	        </if> 
+	        <if test="compid != null">
+	            and compid = #{compid}
+	        </if> 
+	        <if test="compnm != null">
+	            and compnm = #{compnm}
+	        </if> 
+	        <if test="state != null">
+	            and state = #{state}
+	        </if>
+	        <if test="useyn != null">
+	            and useyn = #{useyn}
+	        </if>
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 부서정보 등록 -->
+    <insert id="insertDept" parameterType="map">
+		insert into ${hrschema}.hrpj_dept (<include refid="select-dept-frag" />)
+		select 
+			concat('DEPT', lpad(ifnull(cast(substr(max(deptid), 5) as unsigned) + 1, 0), 6, 0)) as deptid,
+		    #{deptnm} as deptnm,
+		    #{updeptid} as updeptid,
+		    #{compid} as compid,
+		    #{compnm} as compnm,
+		    #{state} as state,
+		    #{useyn} as useyn,
+		    (select count(1) from ${hrschema}.hrpj_dept where updeptid = #{updeptid}) as disporder,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    null as updid,
+		    null as upddate,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		from ${hrschema}.hrpj_dept
+		where compid = #{compid}
+    	<selectKey resultType="string" keyProperty="returnKey" order="AFTER">
+    		select max(deptid) as deptid from ${hrschema}.hrpj_dept
+    		where compid = #{compid}
+    	</selectKey>
+    </insert>
+    
+    <!-- 부서정보 수정 -->
+    <update id="updateDept" parameterType="map">
+		update ${hrschema}.hrpj_dept
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="deptnm != null and deptnm !=''">deptnm = #{deptnm},</if> 
+	        <if test="updeptid != null and updeptid !=''">updeptid = #{updeptid},</if> 
+	        <if test="compid != null and compid !=''">compid = #{compid},</if> 
+	        <if test="compnm != null and compnm !=''">compnm = #{compnm},</if> 
+	        <if test="state != null and state !=''">state = #{state},</if> 
+	        <if test="useyn != null and useyn !=''">useyn = #{useyn},</if> 
+	        <if test="disporder != null and disporder !=''">disporder = #{disporder},</if> 
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if> 
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if> 
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if> 
+	        updid = #{hruserid},
+	        upddate = now(),
+        </trim>
+        <where> 
+	        <if test="compUpdate != null and compUpdate != ''">
+	            and compid = #{compid}
+	        </if> 
+	        <if test="compRootUpdate != null and compRootUpdate != ''">
+	            and compid = #{compid}
+	            and updeptid = ''
+	        </if> 
+	        <if test="(compUpdate == null or compUpdate == '') and (compRootUpdate == null or compRootUpdate == '')">
+	            and deptid = #{deptid}
+	        </if>
+        </where>
+    </update>
+    
+    <!-- 부서정보 물리 삭제 -->
+    <delete id="deleteDept" parameterType="map">
+      	delete from ${hrschema}.hrpj_dept
+      	<where> 
+	        <if test="compid != null and compid != ''">
+	            and compid = #{compid}
+	        </if> 
+	        <if test="compid == null or compid == ''">
+	            and deptid = #{deptid}
+	        </if>
+        </where>
+    </delete>
+
+</mapper>

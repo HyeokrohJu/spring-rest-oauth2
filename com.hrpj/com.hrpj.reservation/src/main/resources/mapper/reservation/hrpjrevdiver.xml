@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 예약 다이버 관련 쿼리 -->
+<mapper namespace="mapper.reservation.hrpjrevdiver">
+
+	<!-- 예약 다이버 관련 테이블 필드 -->
+	<sql id="select-revdiver-frag">
+		revdiverid, revid, kornm, engnm, flynum, flystartdt, flyenddt, divingstartdt, divingenddt,
+		divingtype, divingcert, erentalyn, stature, weight, shoessize, age, sex, address, etcstayyn, staydesc,
+		creid, credate, updid, upddate, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 예약 다이버 등록 -->
+    <insert id="insertRevDiver" parameterType="map">
+		insert into ${hrschema}.hrpj_revdiver (<include refid="select-revdiver-frag" />)
+		select 
+			ifnull(max(revdiverid), 0) + 1 as revdiverid,
+		    #{revid} as revid,
+		    #{kornm} as kornm,
+		    #{engnm} as engnm,
+		    #{flynum} as flynum,
+		    #{flystartdt} as flystartdt,
+		    #{flyenddt} as flyenddt,
+		    #{divingstartdt} as divingstartdt,
+		    #{divingenddt} as divingenddt,
+		    #{divingtype} as divingtype,
+		    #{divingcert} as divingcert,
+		    #{erentalyn} as erentalyn,
+		    #{stature} as stature,
+		    #{weight} as weight,
+		    #{shoessize} as shoessize,
+		    #{age} as age,
+		    #{sex} as sex,
+		    #{address} as address,
+		    #{etcstayyn} as etcstayyn,
+		    #{staydesc} as staydesc,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    null as updid,
+		    null as upddate,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		from ${hrschema}.hrpj_revdiver
+    	where revid = #{revid}
+    	<selectKey resultType="string" keyProperty="returnKey" order="AFTER">
+    		select 
+    			max(revdiverid) as revdiverid 
+    		from ${hrschema}.hrpj_revdiver
+    		where revid = #{revid}
+    	</selectKey>
+    </insert>
+    
+    <!-- 예약 다이버 조회 -->
+    <select id="selectRevDiver" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-revdiver-frag" />
+        from ${hrschema}.hrpj_revdiver
+        <where> 
+	        <if test="revdiverid != null">
+	            and revdiverid = #{revdiverid}
+	        </if> 
+	        <if test="revid != null">
+	            and revid = #{revid}
+	        </if> 
+	        <if test="kornm != null">
+	            and kornm = #{kornm}
+	        </if> 
+	        <if test="engnm != null">
+	            and engnm = #{engnm}
+	        </if> 
+	        <if test="flynum != null">
+	            and flynum = #{flynum}
+	        </if> 
+	        <if test="flystartdt != null">
+	            and date_format(flystartdt, '%Y%m%d') = #{flystartdt}
+	        </if>
+	        <if test="flyenddt != null">
+	            and date_format(flyenddt, '%Y%m%d') = #{flyenddt}
+	        </if>
+	        <if test="divingstartdt != null">
+	            and date_format(divingstartdt, '%Y%m%d') = #{divingstartdt}
+	        </if>
+	        <if test="divingenddt != null">
+	            and date_format(divingenddt, '%Y%m%d') = #{divingenddt}
+	        </if>
+	        <if test="divingtype != null">
+	            and divingtype = #{divingtype}
+	        </if>
+	        <if test="divingcert != null">
+	            and divingcert = #{divingcert}
+	        </if>
+	        <if test="creid != null">
+	            and creid = #{creid}
+	        </if> 
+	        <if test="credate != null">
+	            and credate = #{credate}
+	        </if> 
+	        <if test="updid != null">
+	            and updid = #{updid}
+	        </if> 
+	        <if test="upddate != null">
+	            and upddate = #{upddate}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 예약 다이버 수정 -->
+    <update id="updateRevDiver" parameterType="map">
+		update ${hrschema}.hrpj_revdiver
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="revid != null and revid !=''">revid = #{revid},</if> 
+	        <if test="kornm != null and kornm !=''">kornm = #{kornm},</if> 
+	        <if test="engnm != null and engnm !=''">engnm = #{engnm},</if>  
+	        <if test="flynum != null and flynum !=''">flynum = #{flynum},</if>  
+	        <if test="flystartdt != null and flystartdt !=''">flystartdt = #{flystartdt},</if>  
+	        <if test="flyenddt != null and flyenddt !=''">flyenddt = #{flyenddt},</if>  
+	        <if test="divingstartdt != null and divingstartdt !=''">divingstartdt = #{divingstartdt},</if>  
+	        <if test="divingenddt != null and divingenddt !=''">divingenddt = #{divingenddt},</if>  
+	        <if test="divingtype != null and divingtype !=''">divingtype = #{divingtype},</if>  
+	        <if test="divingcert != null and divingcert !=''">divingcert = #{divingcert},</if>  
+	        <if test="erentalyn != null and erentalyn !=''">erentalyn = #{erentalyn},</if>  
+	        <if test="stature != null and stature !=''">stature = #{stature},</if>  
+	        <if test="weight != null and weight !=''">weight = #{weight},</if>  
+	        <if test="shoessize != null and shoessize !=''">shoessize = #{shoessize},</if>  
+	        <if test="age != null and age !=''">age = #{age},</if>  
+	        <if test="sex != null and sex !=''">sex = #{sex},</if>  
+	        <if test="address != null and address !=''">address = #{address},</if>  
+	        <if test="etcstayyn != null and etcstayyn !=''">etcstayyn = #{etcstayyn},</if>  
+	        <if test="staydesc != null and staydesc !=''">staydesc = #{staydesc},</if>  
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if>  
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if>  
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if>  
+	        updid = #{hruserid},
+	        upddate = now(),
+        </trim>
+        where revid = #{revid}
+        and revdiverid = #{revdiverid}
+    </update>
+    
+    <!-- 예약 다이버 물리 삭제 -->
+    <delete id="deleteRevDiver" parameterType="map">
+      	delete from ${hrschema}.hrpj_revdiver
+      	where revid = #{revid}
+        <if test="revdiverid != null and revdiverid != ''">
+        and revdiverid = #{revdiverid}
+        </if>
+    </delete>
+
+</mapper>

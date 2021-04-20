@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 회사 관련 쿼리 -->
+<mapper namespace="mapper.organization.hrpjcomp">
+
+	<!-- 회사정보 테이블 필드 -->
+	<sql id="select-comp-frag">
+		compid, compnm, sgrp, repnm, domain, zipcd, addr1, addr2, phone, fax, useyn, disporder,
+		creid, credate, updid, upddate, custom1, custom2, custom3
+    </sql>
+    
+    <!-- 회사정보 조회 -->
+    <select id="selectComp" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-comp-frag" />
+        from ${hrschema}.hrpj_comp
+        <where> 
+	        <if test="compid != null">
+	            and compid = #{compid}
+	        </if> 
+	        <if test="compnm != null">
+	            and compnm = #{compnm}
+	        </if> 
+	        <if test="sgrp != null">
+	            and sgrp = #{sgrp}
+	        </if> 
+	        <if test="repnm != null">
+	            and repnm = #{repnm}
+	        </if> 
+	        <if test="phone != null">
+	            and phone = #{phone}
+	        </if> 
+	        <if test="fax != null">
+	            and fax = #{fax}
+	        </if> 
+	        <if test="useyn != null">
+	            and useyn = #{useyn}
+	        </if>
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- 회사정보 등록 -->
+    <insert id="insertComp" parameterType="map">
+		insert into ${hrschema}.hrpj_comp (<include refid="select-comp-frag" />)
+		select 
+			concat('COMP', lpad(ifnull(cast(substr(max(compid), 5) as unsigned) + 1, 0), 6, 0)) as compid,
+		    #{compnm} as compnm,
+		    #{sgrp} as sgrp,
+		    #{repnm} as repnm,
+		    #{domain} as domain,
+		    #{zipcd} as zipcd,
+		    #{addr1} as addr1,
+		    #{addr2} as addr2,
+		    #{phone} as phone,
+		    #{fax} as fax,
+		    #{useyn} as useyn,
+		    count(1) as disporder,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    null as updid,
+		    null as upddate,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		from ${hrschema}.hrpj_comp
+    	<selectKey resultType="string" keyProperty="returnKey" order="AFTER">
+    		select max(compid) as compid from ${hrschema}.hrpj_comp
+    	</selectKey>
+    </insert>
+    
+    <!-- 회사정보 수정 -->
+    <update id="updateComp" parameterType="map">
+		update ${hrschema}.hrpj_comp
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="compnm != null and compnm !=''">compnm = #{compnm},</if> 
+	        <if test="sgrp != null and sgrp !=''">sgrp = #{sgrp},</if> 
+	        <if test="repnm != null and repnm !=''">repnm = #{repnm},</if> 
+	        <if test="domain != null and domain !=''">domain = #{domain},</if> 
+	        <if test="zipcd != null and zipcd !=''">zipcd = #{zipcd},</if> 
+	        <if test="addr1 != null and addr1 !=''">addr1 = #{addr1},</if> 
+	        <if test="addr2 != null and addr2 !=''">addr2 = #{addr2},</if> 
+	        <if test="phone != null and phone !=''">phone = #{phone},</if> 
+	        <if test="fax != null and fax !=''">fax = #{fax},</if> 
+	        <if test="useyn != null and useyn !=''">useyn = #{useyn},</if> 
+	        <if test="disporder != null and disporder !=''">disporder = #{disporder},</if> 
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if> 
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if> 
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if> 
+	        updid = #{hruserid},
+	        upddate = now(),
+        </trim>
+        where compid = #{compid}
+    </update>
+    
+    <!-- 회사정보 물리 삭제 -->
+    <delete id="deleteComp" parameterType="map">
+      	delete from ${hrschema}.hrpj_comp
+      	where compid = #{compid}
+    </delete>
+
+</mapper>

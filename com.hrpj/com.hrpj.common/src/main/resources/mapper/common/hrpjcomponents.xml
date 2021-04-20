@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- React Components 관리 쿼리 -->
+<mapper namespace="mapper.common.hrpjcomponents">
+
+	<!-- React Components 관리 테이블 필드 -->
+	<sql id="select-components-frag">
+        componentid, sgrp, menucd, upath, cpath, rid, useyn, fldyn,
+        creid, credate, updid, upddate, custom1, custom2, custom3
+    </sql>
+    
+    <!-- React Components 등록 -->
+    <insert id="insertComponents" parameterType="map">
+		insert into ${hrschema}.hrpj_components (<include refid="select-components-frag" />)
+		select 
+			(ifnull(max(componentid), 0) + 1) as componentid,
+		    #{sgrp} as sgrp,
+		    #{menucd} as menucd,
+		    #{upath} as upath,
+		    #{cpath} as cpath,
+		    #{rid} as rid,
+		    #{useyn} as useyn,
+		    #{fldyn} as fldyn,
+		    #{hruserid} as creid,
+		    now() as credate,
+		    null as updid,
+		    null as upddate,
+		    #{custom1} as custom1,
+		    #{custom2} as custom2,
+		    #{custom3} as custom3
+		from ${hrschema}.hrpj_components
+    	<selectKey resultType="string" keyProperty="returnKey" order="AFTER">
+    		select max(componentid) as componentid from ${hrschema}.hrpj_components
+    	</selectKey>
+    </insert>
+    
+    <!-- React Components 조회 -->
+    <select id="selectComponents" parameterType="map" resultType="caseMap">
+    	select
+        	<include refid="select-components-frag" />,
+        	(select menunm from ${hrschema}.hrpj_menu where menucd = a.menucd) as menunm
+        from ${hrschema}.hrpj_components a
+        <where> 
+	        <if test="sgrp != null">
+	            and sgrp = #{sgrp}
+	        </if> 
+	        <if test="menucd != null">
+	            and menucd = #{menucd}
+	        </if> 
+	        <if test="componentid != null">
+	            and componentid = #{componentid}
+	        </if>
+	        <if test="rid != null">
+	            and rid = #{rid}
+	        </if>
+	        <if test="fldyn != null">
+	            and fldyn = #{fldyn}
+	        </if>
+	        <if test="creid != null">
+	            and creid = #{creid}
+	        </if> 
+	        <if test="credate != null">
+	            and credate = #{credate}
+	        </if> 
+	        <if test="updid != null">
+	            and updid = #{updid}
+	        </if> 
+	        <if test="upddate != null">
+	            and upddate = #{upddate}
+	        </if> 
+	        <if test="searchtxt != null">
+	            and ${searchtype} like concat('%', #{searchtxt}, '%')
+	        </if> 
+        </where>
+        <if test="ordercol != null and ordercol !=''">
+        order by ${ordercol} ${ordertype}  
+        </if>
+    </select>
+    
+    <!-- React Components 수정 -->
+    <update id="updateComponents" parameterType="map">
+		update ${hrschema}.hrpj_components
+		<trim prefix="SET" suffixOverrides=",">
+	        <if test="upath != null and upath !=''">upath = #{upath},</if> 
+	        <if test="cpath != null and cpath !=''">cpath = #{cpath},</if> 
+	        <if test="rid != null and rid !=''">rid = #{rid},</if> 
+	        <if test="useyn != null and useyn !=''">useyn = #{useyn},</if>  
+	        <if test="fldyn!= null and fldyn !=''">fldyn = #{fldyn},</if>  
+	        <if test="custom1 != null and custom1 !=''">custom1 = #{custom1},</if>  
+	        <if test="custom2 != null and custom2 !=''">custom2 = #{custom2},</if>  
+	        <if test="custom3 != null and custom3 !=''">custom3 = #{custom3},</if>  
+	        updid = #{hruserid},
+	        upddate = now(),
+        </trim>
+        <where>
+	        <if test="componentid != null and componentid !=''">
+	        and componentid = #{componentid}
+	        </if>
+	        <if test="menucd != null and menucd !=''">
+	        and menucd = #{menucd}
+	        </if> 
+	        <if test="rid != null and rid !=''">
+	        and rid = #{rid}
+	        </if> 
+        </where>
+    </update>
+    
+    <!-- React Components 물리 삭제 -->
+    <delete id="deleteComponents" parameterType="map">
+      	delete from ${hrschema}.hrpj_components
+        <where>
+	        <if test="componentid != null and componentid !=''">
+	        and componentid = #{componentid}
+	        </if>
+	        <if test="componentid == null or componentid ==''">
+	        and menucd = #{menucd}
+	        </if> 
+        </where>
+    </delete>
+
+</mapper>

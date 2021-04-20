@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 게시판 관련 쿼리 -->
+<mapper namespace="com.hrpj.oauth.dao.UserInfoDao">
+
+	<select id="findByLoginId" resultType="com.hrpj.oauth.vo.UserInfo" parameterType="java.util.Map">
+		select
+			userid as id, loginid as username, passwd as password,
+			userid, usernm, deptid, deptnm, compid, compnm, loginid, passwd, email,
+			'1' as enabled , '0' as credentialsexpired, '0' as expired, '0' as locked, credate, updid, upddate,
+			(select sgrp from ${hrschema}.hrpj_comp where compid = a.compid) as sgrp
+		from ${hrschema}.hrpj_member a
+		where loginid = #{loginid}
+	</select>
+	
+	<select id="findRole" resultType="com.hrpj.oauth.vo.Role" parameterType="java.util.Map">
+		select
+			r.id as roleid, r.code, r.label 
+		from ${hrschema}.hrpj_role r, ${hrschema}.hrpj_memberrole u
+		where u.userid = #{userid}
+		and u.roleid = r.id
+	</select>
+<!-- 
+	<select id="findByLoginId" resultType="com.hrpj.oauth.vo.UserInfo" parameterType="java.util.Map">
+		select 
+			userid as id, loginid as username, passwd as password,
+			userid, usernm, deptid, deptnm, compid, compnm, loginid, passwd, email,
+			enabled, credentialsexpired, expired, locked, createdtime
+		from ${hrschema}.roho_member
+		where loginid = #{loginid}
+	</select>
+	
+	<select id="findRole" resultType="com.hrpj.oauth.vo.Role" parameterType="java.util.Map">
+		select
+			r.roleid, r.code, r.label 
+		from ${hrschema}.roho_role r, ${hrschema}.roho_memberrole u
+		where u.userid = #{userid}
+		and u.roleid = r.roleid;
+	</select>
+  -->
+</mapper>
